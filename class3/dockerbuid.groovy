@@ -1,5 +1,4 @@
 def k8slabel = "jenkins-pipeline-${UUID.randomUUID().toString()}"
-
 def slavePodTemplate = """
       metadata:
         labels:
@@ -36,8 +35,7 @@ def slavePodTemplate = """
             hostPath:
               path: /var/run/docker.sock
     """
-    
-    properties([
+    properties([      //The parameter gitParameter responsible to get the exactly the version to be build and will save the selected the version as release_name
         parameters([
             gitParameter(branch: '', branchFilter: 'origin/(.*)', 
             defaultValue: 'origin/version/0.1', description: 'Please go ahead  and select the version ', 
@@ -45,21 +43,22 @@ def slavePodTemplate = """
             sortMode: 'NONE', tagFilter: 'origin/(.*)', type: 'PT_BRANCH', useRepository: 'https://github.com/fuchicorp/artemis')
             ])
             ])
-
-
+    
+    //Scheduling the node to run the build
     podTemplate(name: k8slabel, label: k8slabel, yaml: slavePodTemplate, showRawYaml: false) {
       node(k8slabel) {
-
-        stage('Pull SCM') {
+        stage('Pull SCM') {     //Responsible to pull the source from GitHub in this case. NOTE: before we pull the code we are using params.release_name to get exactly the version to be pulled
             git branch: "${params.release_name}", url: 'https://github.com/fuchicorp/artemis'
         }
         
+        //pull the source code we will need to run the build
         stage("Docker Build") {
             container("docker") {
-                sh "docker build -t fsadykov/artemis:${release_name.replace('version/', 'v')}  ."
+                sh "docker build -t sevil2020/artemis:${release_name.replace('version/', 'v')}  ."
             }
         }
 
+        //We have created a credential call docker-hub-creds which is contains our username and passworrd so Jenkins can use that securely
         stage("Docker Login") {
             withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', passwordVariable: 'password', usernameVariable: 'username')]) {
                 container("docker") {
@@ -67,11 +66,11 @@ def slavePodTemplate = """
                 }
             }
         }
-
+        //We have created a credential call docker-hub-creds which is contains our username and passworrd so Jenkins can use that securely
         stage("Docker Push") {
-          container("docker") {
-              sh "docker push fsadykov/artemis:${release_name.replace('version/', 'v')}"
-          }
+            container("docker") {
+                sh "docker push sevil2020/artemis:${release_name.replace('version/', 'v')}"
+            }
         }
       }
     }
