@@ -1,93 +1,38 @@
-# Jenkins class 1 
-## Topic Installation
-#devops/course/jenkins #evolvecyber/jenkins #devops/jenkins/class/1
-## Install Jenkins on Kubernetes
+# Syllabus for the class 
+#devops/jenkins/class
 
-Install Jenkins 
-```
-helm install --name jenkins  --set master.serviceType=LoadBalancer stable/jenkins --version 2.1.0
-```
-
-
-You can get admin's password by following command
-```
-printf $(kubectl get secret --namespace default jenkins -o jsonpath="{.data.jenkins-admin-password}" | base64 --decode);echo
-```
+# Class 1 
+1. Introduction and set up Jenkins. 
+2. Learning basic interfaces 
+3. Working with plugins
+4. Understanding Script console
+5. Understanding user management
 
 
-Wait for loadBalancer to pick up public IP 
-```
-kubectl get svc --namespace default -w jenkins
-```
+# Class 2 
+1. Setting up groovy and local laptop
+2. Working with syntax groovy 
+3. Learning data types and some functions
 
 
-After that you can go ahead and get url of the Jenkins
-```
-export SERVICE_IP=$(kubectl get svc --namespace default jenkins --template "{{ range (index .status.loadBalancer.ingress 0) }}{{ . }}{{ end }}")
-echo http://$SERVICE_IP:8080/login
-```
+# Class 3
+1. Working with docker build job
+2. Understand docker integration with Jenkins
+3. Working with credentials to build and push 
 
 
-### Jenkins configuration
-1. System Message
-2. Jenkins Location
-3. Global Pipeline Libraries
-4. E-mail Notification 
+# Class 4
+1. Working with packer build
+2. Integrating Jenkins with AWS
+3. Creating multiple AWS credentials
 
 
-#### Plugin management
-1. Installation 
-2. Upgrade  
-3. Remove  
+# Class 5
+1. Working with terraform
+2. Creating a job to apply/destroy/plan the terraform source code
+3. Deploying same code to multiple environments
 
 
-#### Jenkins Credentials
-1. Creation  
-2. Delete
-3. Update
-
-
-#### Jenkins logs
-All changes detected and you should be able to see all logs
-
-
-#### About page
-Jenkins Version 
-Status licenses
-Plugins for the Jenkins
-
-
-#### Jenkins Console Script
-1. Only administrator has access 
-2. Use following script  `println('Hello World!')`
-
-
-Get all display name 
-```
-Jenkins.instance.pluginManager.plugins.each() {
-  println(it.getDisplayName())
-}
-```
-
-
-IsEnabled function 
-```
-Jenkins.instance.pluginManager.plugins.each() {
-  println(it.getDisplayName())
-  if (it.isEnabled()) {
-    println('Enabled yes')
-  } else {
-    println('Not enabled')
-  }
-}
-```
-
-
-
-## Questions
-What is a Jenkinsfile? 
-Why do we use Jenkins? 
-What is meant by continuous integration in Jenkins? 
-What is the difference between Hudson and Jenkins? 
-How do you create a Job in Jenkins? 
-
+# Class 6 
+1. Integrating build job to deploy
+2. Making sure specific branch goes to specific environments
