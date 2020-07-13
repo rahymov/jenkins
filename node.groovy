@@ -37,41 +37,14 @@ def slavePodTemplate = """
               path: /var/run/docker.sock
     """
     
-    properties([
-        parameters([
-            gitParameter(branch: '', branchFilter: 'origin/(.*)', 
-            defaultValue: 'origin/version/0.1', description: 'Please go ahead  and select the version ', 
-            name: 'release_name', quickFilterEnabled: false, selectedValue: 'NONE', 
-            sortMode: 'NONE', tagFilter: 'origin/(.*)', type: 'PT_BRANCH', useRepository: 'https://github.com/fuchicorp/artemis')
-            ])
-            ])
-
-
     podTemplate(name: k8slabel, label: k8slabel, yaml: slavePodTemplate, showRawYaml: false) {
       node(k8slabel) {
-
-        stage('Pull SCM') {
-            git branch: "${params.release_name}", url: 'https://github.com/fuchicorp/artemis'
-        }
-        
-        stage("Docker Build") {
+          
+        stage("Docker check") {
             container("docker") {
-                sh "docker build -t fsadykov/artemis:${release_name.replace('version/', 'v')}  ."
+                sh 'docker --version'
             }
         }
-
-        stage("Docker Login") {
-            withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', passwordVariable: 'password', usernameVariable: 'username')]) {
-                container("docker") {
-                    sh "docker login --username ${username} --password ${password}"
-                }
-            }
-        }
-
-        stage("Docker Push") {
-          container("docker") {
-              sh "docker push fsadykov/artemis:${release_name.replace('version/', 'v')}"
-          }
-        }
+      
       }
     }
