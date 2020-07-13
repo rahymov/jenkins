@@ -1,83 +1,122 @@
-# Jenkins Class 3 
-## Topic Docker build
-#devops/jenkins/class/3
-
-Create a Jenkins job to build docker image to docker hub.  Please follow the bellow requirements.
-1. Make sure user can select the version to build from params
-2. The Jenkins job should build and push to docker Hub
-3. Use secure way to login with docker hub do not hard code any creds to pipeline
+# Jenkins class 2 
+#devops/jenkins/class/2
 
 
-## Solution 
-We need to create the parameters for user so user can go ahead and select the version.  The parameter `gitParameter` responsible to get the exactly the version to be build and will save the selected the version as `release_name`
+#### What Jenkins jobs?
+
+Simply put, you can think of a Jenkins build job as a particular task or step in your build process. Jenkins will run all task you put inside your Jenkins jobs. 
+Jobs are any runnable task which is controller by Jenkins
+
+
+## Jobs
+1. Create 
+2. Delete
+3. Update 
+
+
+## Job features
+Pipeline Syntax
+Recent Changes
+Configure
+
+
+## Hello world job
 ```
-properties([
-  parameters([
-    gitParameter(branch: '', branchFilter: 'origin/(.*)', 
-    defaultValue: 'origin/version/0.1', description: 'Please go ahead  and select the version ', 
-    name: 'release_name', quickFilterEnabled: false, selectedValue: 'NONE', 
-    sortMode: 'NONE', tagFilter: 'origin/(.*)', type: 'PT_BRANCH', useRepository: 'https://github.com/fuchicorp/artemis')
-  ])
-])
+print('Hello World')
 ```
 
-Scheduling the node to run the build
+
+
+# Groovy Syntax and datatypes
+Groovy create empty string `first_name` which will contain `Frank`
+```
+def first_name = "Frank" // String Type 
+println(first_name)
+```
+
+List of names in groovy `names` will contain the list of names `Anna`,  `Nastya ` and `Vova `
+```
+def names = ["Anna", "Nastya", "Vova" ] // List of Strings
+println(names)
+```
+
+Map type of the variables which will contain everything about one person 
+```
+def myInfo = [
+    "first_name": "Farkhod", 
+    "last_name": "Sadykov"
+    ] // Map in groovy 
+println(myInfo)
+```
+
+Boolean type of the veritable which is set to false in this case 
+```
+def debugMode = false // Bool variale in groovy 
+println(debugMode)
+```
+
+function `sayHello` will will print `Hello World ` when it has been called
+```
+def sayHello() { // Functions in groovy 
+    println('Hello World')
+}
+sayHello() // Call the function in groovy 
+```
+
+
+## Jenkins node schedule
+Jenkins uses plugin to spin up one node and run the job on top of that. Node can be configured from the job and added all features. See `k8slabel` which is creating a uniq string which will store name of the node or label on Kubernetes. NOTE: Kubernetes uses uniq name for each manifest 
+```
+def k8slabel = "jenkins-pipeline-${UUID.randomUUID().toString()}"
+```
+
+After you have uniq name for your node/POD you will need yaml structure. See `slavePodTemplate` which will run a container `docker` which is can be used for docker builds  or any other docker related features.  
+```
+def slavePodTemplate = """
+      metadata:
+        labels:
+          k8s-label: ${k8slabel}
+        annotations:
+          jenkinsjoblabel: ${env.JOB_NAME}-${env.BUILD_NUMBER}
+      spec:
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: component
+                  operator: In
+                  values:
+                  - jenkins-jenkins-master
+              topologyKey: "kubernetes.io/hostname"
+        containers:
+        - name: docker
+          image: docker:latest
+          imagePullPolicy: IfNotPresent
+          command:
+          - cat
+          tty: true
+          volumeMounts:
+            - mountPath: /var/run/docker.sock
+              name: docker-sock
+        serviceAccountName: default
+        securityContext:
+          runAsUser: 0
+          fsGroup: 0
+        volumes:
+          - name: docker-sock
+            hostPath:
+              path: /var/run/docker.sock
+    """
+```
+
+After you have name and yaml you will need to spin up the node on top of Kubernetes. In example below you have  See example bellow
 ```
 podTemplate(name: k8slabel, label: k8slabel, yaml: slavePodTemplate, showRawYaml: false) {
-  node(k8slabel) {
-   // all steps goes here
+	node(k8slabel) {
+	// All actions goes here
 	}
 }
 ```
-
-
-## Pull SCM
-Responsible to pull the source from GitHub in this case. 
-NOTE: before we pull the code we are using `params.release_name` to get exactly the version to be pulled
-
-```
-stage('Pull SCM') {
-  git branch: "${params.release_name}", url: 'https://github.com/fuchicorp/artemis'
-}
-```
-
-
-## Docker Build
-After we have pull the source code we will need to run the build. The `Dockerfile` is already exist so we will need to make sure docker command installed and run the  `docker build -t example .` 
-NOTE: Here we are go into  to the `docker` container and  also using `release_name` to able to build right version 
-```
-stage("Docker Build") {
-  container("docker") {
-    sh "docker build -t fsadykov/artemis:${release_name.replace('version/', 'v')}  ."
-  }
-}
-```
-
-
-
-## Docker Login
-We have created a credential call `docker-hub-creds` which is contains our `username` and `passworrd` so Jenkins can use that securely 
-```
-stage("Docker Login") {
-  withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', passwordVariable: 'password', usernameVariable: 'username')]) {
-    container("docker") {
-      sh "docker login --username ${username} --password ${password}"
-    }
-  }
-}
-```
-
-
-
-## Docker Push
-Final stage will be the docker push which which is responsible to push the docker image to docker hub in this case. Same steps going to same container to be able to run docker commands and pushing to user `fsadykov` to specific repository `artemis` it will also include the version `release_name`
-```
-stage("Docker Push") {
-  container("docker") {
-    sh "docker push fsadykov/artemis:${release_name.replace('version/', 'v')}"
-  }
-}
-```
-
 
 
