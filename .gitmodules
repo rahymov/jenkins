@@ -1,0 +1,3 @@
+[submodule "jenkeins-exercise"]
+	path = jenkeins-exercise
+	url = https://github.com/rahymov/jenkins-exercise
