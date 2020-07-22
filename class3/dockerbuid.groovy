@@ -35,27 +35,37 @@ def slavePodTemplate = """
             hostPath:
               path: /var/run/docker.sock
     """
-    properties([      //The parameter gitParameter responsible to get the exactly the version to be build and will save the selected the version as release_name
-        parameters([
-            gitParameter(branch: '', branchFilter: 'origin/(.*)', 
-            defaultValue: 'origin/version/0.1', description: 'Please go ahead  and select the version ', 
-            name: 'release_name', quickFilterEnabled: false, selectedValue: 'NONE', 
-            sortMode: 'NONE', tagFilter: 'origin/(.*)', type: 'PT_BRANCH', useRepository: 'https://github.com/fuchicorp/artemis')
-            ])
-            ])
+    // properties([      //The parameter gitParameter responsible to get the exactly the version to be build and will save the selected the version as release_name
+    //     parameters([
+    //         gitParameter(branch: '', branchFilter: 'origin/(.*)', 
+    //         defaultValue: 'origin/version/0.1', description: 'Please go ahead  and select the version ', 
+    //         name: 'release_name', quickFilterEnabled: false, selectedValue: 'NONE', 
+    //         sortMode: 'NONE', tagFilter: 'origin/(.*)', type: 'PT_BRANCH', useRepository: 'https://github.com/fuchicorp/artemis')
+    //         ])
+    //         ])
     
+      properties([      //The parameter gitParameter responsible to get the exactly the version to be build and will save the selected the version as release_name
+        parameters([
+           gitParameter(branch: '', branchFilter: 'origin/(.*)', 
+             defaultValue: 'origin/version/0.1', description: 'Please go ahead  and select the version ', 
+             name: 'release_name', quickFilterEnabled: false, selectedValue: 'NONE', 
+             sortMode: 'NONE', tagFilter: 'origin/(.*)', type: 'PT_BRANCH', useRepository: 'https://github.com/fuchicorp/artemis')
+          ]) 
+        ])
+
+
     //Scheduling the node to run the build
     podTemplate(name: k8slabel, label: k8slabel, yaml: slavePodTemplate, showRawYaml: false) {
       node(k8slabel) {
         stage('Pull SCM') {     //Responsible to pull the source from GitHub in this case. NOTE: before we pull the code we are using params.release_name to get exactly the version to be pulled
-            git branch: "${params.release_name}", url: 'https://github.com/fuchicorp/artemis'
+          git branch: "${params.release_name}", url: 'https://github.com/fuchicorp/artemis'
         }
         
         //pull the source code we will need to run the build
-        stage("Docker Build") {
-            container("docker") {
-                sh "docker build -t sevil2020/artemis:${release_name.replace('version/', 'v')}  ."
-            }
+        stage("Docker Build"){
+          container("docker") {
+            sh "docker build -t rahymov/artemis:${release_name.replace('version/', 'v')}  . "
+          }
         }
 
         //We have created a credential call docker-hub-creds which is contains our username and passworrd so Jenkins can use that securely
@@ -66,11 +76,13 @@ def slavePodTemplate = """
                 }
             }
         }
-        //We have created a credential call docker-hub-creds which is contains our username and passworrd so Jenkins can use that securely
+        //  We have created a credential call docker-hub-creds which is contains our username and passworrd so Jenkins can use that securely
         stage("Docker Push") {
             container("docker") {
-                sh "docker push sevil2020/artemis:${release_name.replace('version/', 'v')}"
+                sh "docker push rahymov/artemis:${release_name.replace('version/', 'v')}"
             }
         }
       }
     }
+
+// :${release_name.replace('version/', 'v')}

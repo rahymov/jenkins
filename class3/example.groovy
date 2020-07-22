@@ -1,5 +1,6 @@
 def first_name = "Frank" // String Type 
 
+
 def names = ["Anna", "Nastya", "Vova" ] // List of Strings
 
 def myInfo = [
