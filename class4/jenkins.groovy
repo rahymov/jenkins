@@ -22,7 +22,7 @@ def slavePodTemplate = """
           imagePullPolicy: IfNotPresent
           command:
           - cat
-          tty: true
+          tty: true 
           volumeMounts:
             - mountPath: /var/run/docker.sock
               name: docker-sock
@@ -44,37 +44,83 @@ def slavePodTemplate = """
             hostPath:
               path: /var/run/docker.sock
     """
+    
     properties([
-        parameters([
-            choice(choices: ['us-west-2', 'us-west-1', 'us-east-2', 'us-east-1', 'eu-west-1'], 
-            description: 'Please select the region to build the packer for.', name: 'aws_region')
-        ])
+      parameters([
+        choice(choices: ['us-west-2', 'us-west-1', 'us-east-2', 'us-east-1', 'eu-west-1'], 
+        description: 'Please select the region to build the packer.', name: 'aws_region')
+       ])
     ])
+
     podTemplate(name: k8slabel, label: k8slabel, yaml: slavePodTemplate, showRawYaml: false) {
       node(k8slabel) {
+        
         stage("Pull SCM") {
-            git 'https://github.com/sevilbeyza/evolvecyber-jenkins.git'
-        }-
+          git 'https://github.com/rahymov/jenkins.git'
+        } 
+
         dir('class4/packer/') {
-            container('packer') {
-                withCredentials([usernamePassword(credentialsId: 'packer-build-creds', passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')]) {
-                    stage("Packer Validate") {
-                        println('Validating the syntax.')
-                        sh 'packer validate -syntax-only jenkins.json'
-                        println('Validating the packer code.')
-                        sh 'packer validate jenkins.json'
-                    }
-                    stage("Packer Build") {
-                        println("Selected AWS region is: ${aws_region}")
-                        println('Building the packer.')
-                        sh """
-                        #!/bin/bash
-                        export AWS_REGION=${aws_region}
-                        packer build jenkins.json
-                        """
-                    }
-                }
-            }
+          container('packer') {
+            withCredentials([usernamePassword(credentialsId: 'packer-build-creds', passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')]) {
+              stage("Packer Validate") {
+                println('Validating the syntax.')
+                sh 'packer validate -syntax-only jenkins.json'
+                
+                println('Validating the packer code.')
+                sh 'packer validate jenkins.json'
+              } 
+
+              stage("Packer Build") {
+                println("Selected AWS region is: ${params.aws_region}")
+                println('Building the packer.')
+                sh """
+                #!/bin/bash
+                export AWS_REGION=${aws_region}
+                packer build jenkins.json
+                """
+              } 
+          }
+
+            
+          }   
         }
       }
     }
+     
+     
+
+    
+    // properties([
+    //     parameters([
+    //         choice(choices: ['us-west-2', 'us-west-1', 'us-east-2', 'us-east-1', 'eu-west-1'], 
+    //         description: 'Please select the region to build the packer for.', name: 'aws_region')
+    //     ])
+    // ])
+    // podTemplate(name: k8slabel, label: k8slabel, yaml: slavePodTemplate, showRawYaml: false) {
+    //   node(k8slabel) {
+    //     stage("Pull SCM") {
+    //         git 'https://github.com/sevilbeyza/evolvecyber-jenkins.git'
+    //     }-
+    //     dir('class4/packer/') {
+    //         container('packer') {
+    //             withCredentials([usernamePassword(credentialsId: 'packer-build-creds', passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')]) {
+    //                 stage("Packer Validate") {
+    //                     println('Validating the syntax.')
+    //                     sh 'packer validate -syntax-only jenkins.json'
+    //                     println('Validating the packer code.')
+    //                     sh 'packer validate jenkins.json'
+    //                 }
+    //                 stage("Packer Build") {
+    //                     println("Selected AWS region is: ${aws_region}")
+    //                     println('Building the packer.')
+    //                     sh """
+    //                     #!/bin/bash
+    //                     export AWS_REGION=${aws_region}
+    //                     packer build jenkins.json
+    //                     """
+    //                 }
+    //             }
+    //         }
+    //     }
+    //   }
+    // }
